@@ -23,7 +23,7 @@ func NewApiServer(listenAddr string, store Storage) *ApiServer {
 func (s *ApiServer) Run() {
 	router := mux.NewRouter()
 	router.HandleFunc("/account", makeHttpHandleFunc(s.handleAccount))
-	router.HandleFunc("/account/{id}", makeHttpHandleFunc(s.handleGetAccount))
+	router.HandleFunc("/account/{id}", makeHttpHandleFunc(s.handleGetAccountById))
 
 	log.Println("JSON API server running on port: ", s.listenAddr)
 	http.ListenAndServe(s.listenAddr, router)
@@ -31,7 +31,7 @@ func (s *ApiServer) Run() {
 
 func (s *ApiServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "GET" {
-		return s.handleGetAccount(w, r)
+		return s.handleGetAccounts(w, r)
 	}
 
 	if r.Method == "POST" {
@@ -44,7 +44,16 @@ func (s *ApiServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
-func (s *ApiServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
+func (s *ApiServer) handleGetAccounts(w http.ResponseWriter, r *http.Request) error {
+	accounts, err := s.store.GetAccounts()
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, accounts)
+}
+
+func (s *ApiServer) handleGetAccountById(w http.ResponseWriter, r *http.Request) error {
 	id := mux.Vars(r)["id"]
 	fmt.Println(id)
 
@@ -61,7 +70,7 @@ func (s *ApiServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	if err := s.store.CreateAccount(account); err != nil {
 		return err
 	}
-	return WriteJSON(w, http.StatusOK, account)
+	return WriteJSON(w, http.StatusAccepted, account)
 }
 
 func (s *ApiServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
