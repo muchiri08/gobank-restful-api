@@ -67,8 +67,8 @@ func (s *PostgresStore) GetAccounts() ([]*Account, error) {
 	}
 	var accounts []*Account
 	for rows.Next() {
-		account := new(Account)
-		if err := rows.Scan(&account.ID, &account.FirstName, &account.LastName, &account.AccountNumber, &account.Balance, &account.CreatedAt); err != nil {
+		account, err := mapRowsToAccount(rows)
+		if err != nil {
 			return nil, err
 		}
 		accounts = append(accounts, account)
@@ -91,10 +91,16 @@ func (s *PostgresStore) GetAccountById(id int) (*Account, error) {
 	}
 
 	for rows.Next() {
-		account := new(Account)
-		if err := rows.Scan(&account.ID, &account.FirstName, &account.LastName, &account.AccountNumber, &account.Balance, &account.CreatedAt); err == nil {
-			return account, nil
-		}
+		return mapRowsToAccount(rows)
 	}
 	return nil, fmt.Errorf("account with id %d not found", id)
+}
+
+func mapRowsToAccount(rows *sql.Rows) (*Account, error) {
+	account := new(Account)
+	err := rows.Scan(&account.ID, &account.FirstName, &account.LastName, &account.AccountNumber, &account.Balance, &account.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return account, nil
 }
